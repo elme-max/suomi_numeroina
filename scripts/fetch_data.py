@@ -8,12 +8,15 @@ import json
 import sys
 import time
 import urllib.request
+import webbrowser
 from datetime import datetime, timezone
 from pathlib import Path
 
 API = "https://pxdata.stat.fi/PxWeb/api/v1/fi/StatFin/"
 BROWSE = "https://pxdata.stat.fi/PXWeb/pxweb/fi/StatFin/StatFin__{db}/{table}.px/"
-OUT = Path(__file__).resolve().parent.parent / "data" / "data.json"
+ROOT = Path(__file__).resolve().parent.parent
+OUT = ROOT / "data" / "data.json"
+OUT_JS = ROOT / "data" / "data.js"  # sama data skriptinä, jotta sivu toimii myös file://-osoitteesta
 
 
 def fetch(db, table, selections):
@@ -75,13 +78,16 @@ def rounded(points, digits):
 
 
 def labour():
-    s, updated = fetch("tyti", "135z", {"tiedot": ["Tyollaste_20_64_trendi", "tyottaste_trendi"]})
+    s, updated = fetch("tyti", "135z", {"tiedot": [
+        "Tyollaste_20_64_trendi", "tyottaste_trendi", "Tyottaste_15_24_trendi"]})
     out = []
     for key, id_, title, good, note in [
         ("Tyollaste_20_64_trendi", "tyollisyysaste", "Työllisyysaste", "up",
          "20–64-vuotiaat, trendi"),
         ("tyottaste_trendi", "tyottomyysaste", "Työttömyysaste", "down",
          "15–74-vuotiaat, trendi"),
+        ("Tyottaste_15_24_trendi", "nuorisotyottomyys", "Nuorisotyöttömyysaste", "down",
+         "15–24-vuotiaat, trendi"),
     ]:
         pts = s[(key,)]
         period, value = pts[-1]
@@ -179,15 +185,15 @@ def orders():
 
 
 def main():
-    tyollisyys, tyottomyys = labour()
+    tyollisyys, tyottomyys, nuoriso = labour()
     bkt, tuottavuus = national_accounts()
-    indicators = [tyollisyys, tyottomyys, bkt, tuottavuus, orders()]
+    indicators = [tyollisyys, tyottomyys, nuoriso, bkt, tuottavuus, orders()]
 
     for ind in indicators:  # varmistus: ei julkaista tyhjää tai rikkinäistä dataa
         assert len(ind["series"]["points"]) > 24, ind["id"]
 
-    # Tiedosto muuttuu vain, kun Tilastokeskuksen data muuttuu.
-    if OUT.exists():
+    # Tiedostot muuttuvat vain, kun Tilastokeskuksen data muuttuu.
+    if OUT.exists() and OUT_JS.exists():
         old = json.loads(OUT.read_text(encoding="utf-8"))
         if old.get("indicators") == indicators:
             print("Ei muutoksia.")
@@ -195,11 +201,14 @@ def main():
     OUT.parent.mkdir(exist_ok=True)
     payload = {"fetched": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                "indicators": indicators}
-    OUT.write_text(json.dumps(payload, ensure_ascii=False, separators=(",", ":")) + "\n",
-                   encoding="utf-8")
+    text = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+    OUT.write_text(text + "\n", encoding="utf-8")
+    OUT_JS.write_text(f"window.SUOMI_DATA={text};\n", encoding="utf-8")
     for ind in indicators:
         print(f'{ind["title"]}: {ind["hero"]["value"]} {ind["hero"]["unit"]} ({ind["period"]})')
 
 
 if __name__ == "__main__":
     main()
+    if "--avaa" in sys.argv:  # avaa dashboardin selaimeen päivityksen jälkeen
+        webbrowser.open((ROOT / "index.html").as_uri())

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Suomi numeroina</title>
-<meta name="description" content="Suomen talouden tärkeimmät tunnusluvut: työllisyysaste, työttömyysaste, BKT, työn tuottavuus ja teollisuuden uudet tilaukset. Päivittyy automaattisesti Tilastokeskuksen avoimesta datasta.">
+<meta name="description" content="Suomen talouden tärkeimmät tunnusluvut: työllisyysaste, työttömyysaste, nuorisotyöttömyysaste, BKT, työn tuottavuus ja teollisuuden uudet tilaukset. Päivittyy automaattisesti Tilastokeskuksen avoimesta datasta.">
 <style>
   :root {
     color-scheme: light;
@@ -138,6 +138,7 @@
   </footer>
 </main>
 
+<script src="data/data.js"></script>
 <script>
 (() => {
   const SVG = 'http://www.w3.org/2000/svg';
@@ -335,21 +336,18 @@
   for (const b of document.querySelectorAll('.seg button'))
     b.addEventListener('click', () => setYears(Number(b.dataset.years)));
 
-  fetch('data/data.json', { cache: 'no-cache' })
-    .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
-    .then(json => {
-      data = json;
-      document.getElementById('fetched').textContent = `Päivitetty ${dateFi(data.fetched)}.`;
-      grid.replaceChildren(...data.indicators.map(buildCard));
-      setYears([0, 5, 10].includes(years) ? years : 10);
-      let width = grid.clientWidth;
-      new ResizeObserver(() => {
-        if (grid.clientWidth !== width) { width = grid.clientWidth; redraw(); }
-      }).observe(grid);
-    })
-    .catch(err => {
-      grid.replaceChildren(el('div', { class: 'error' }, `Tietojen lataaminen epäonnistui (${err.message}). Yritä hetken kuluttua uudelleen.`));
-    });
+  data = window.SUOMI_DATA;
+  if (!data) {
+    grid.replaceChildren(el('div', { class: 'error' }, 'Tietoja ei löytynyt. Aja ensin: python3 scripts/fetch_data.py'));
+    return;
+  }
+  document.getElementById('fetched').textContent = `Päivitetty ${dateFi(data.fetched)}.`;
+  grid.replaceChildren(...data.indicators.map(buildCard));
+  setYears([0, 5, 10].includes(years) ? years : 10);
+  let width = grid.clientWidth;
+  new ResizeObserver(() => {
+    if (grid.clientWidth !== width) { width = grid.clientWidth; redraw(); }
+  }).observe(grid);
 })();
 </script>
 </body>

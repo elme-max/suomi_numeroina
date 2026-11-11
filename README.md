@@ -6,6 +6,7 @@ Itsestään päivittyvä dashboard Suomen talouden tärkeimmistä tunnusluvuista
 |---|---|---|
 | Työllisyysaste | 20–64-vuotiaat, trendi, kuukausittain | työvoimatutkimus, `135z` |
 | Työttömyysaste | 15–74-vuotiaat, trendi, kuukausittain | työvoimatutkimus, `135z` |
+| Nuorisotyöttömyysaste | 15–24-vuotiaat, trendi, kuukausittain | työvoimatutkimus, `135z` |
 | Bruttokansantuote | volyymi, neljännesvuosittain | neljännesvuositilinpito, `132h` |
 | Työn tuottavuus | BKT:n volyymi / tehdyt työtunnit, kausitasoitettu | neljännesvuositilinpito, `132h` ja `11tj` |
 | Teollisuuden uudet tilaukset | arvoindeksi 2021 = 100, kuukausittain | teollisuuden uudet tilaukset, `14mi` |
@@ -13,28 +14,33 @@ Itsestään päivittyvä dashboard Suomen talouden tärkeimmistä tunnusluvuista
 Kaikki luvut tulevat Tilastokeskuksen maksuttomasta ja avoimesta
 [StatFin-rajapinnasta](https://pxdata.stat.fi/PxWeb/pxweb/fi/StatFin/) (CC BY 4.0). API-avainta ei tarvita.
 
-## Miten päivitys toimii
+## Yksityinen käyttö omalta koneelta
+
+Sivu toimii suoraan tiedostona, palvelinta tai julkaisua ei tarvita. Tarvitset vain Pythonin (3.8+).
+
+Hae tuoreet luvut suoraan Tilastokeskuksesta ja avaa dashboard selaimeen:
+
+```bash
+python3 scripts/fetch_data.py --avaa
+```
+
+Windowsissa komento on `py scripts\fetch_data.py --avaa`. Komennosta voi tehdä työpöydälle
+pikakuvakkeen, jolloin dashboard päivittyy ja aukeaa kaksoisnapsautuksella.
+
+Vaihtoehtoisesti voit avata `index.html`-tiedoston sellaisenaan ja päivittää luvut komennolla
+`git pull`: GitHub Actions tallentaa tuoreen datan repoon päivittäin.
+
+## Miten automaattipäivitys toimii
 
 1. GitHub Actions -työnkulku (`.github/workflows/update.yml`) ajetaan joka päivä.
-2. `scripts/fetch_data.py` hakee tuoreet sarjat ja kirjoittaa ne tiedostoon `data/data.json`.
-   Tiedosto commitoidaan vain, jos Tilastokeskuksen luvut ovat muuttuneet.
-3. Sivu (`index.html` + `data/`) julkaistaan GitHub Pagesiin.
+2. `scripts/fetch_data.py` hakee tuoreet sarjat ja kirjoittaa ne tiedostoihin `data/data.json`
+   ja `data/data.js`. Tiedostot commitoidaan vain, jos Tilastokeskuksen luvut ovat muuttuneet.
 
-## Käyttöönotto
+## Julkinen julkaisu (valinnainen)
 
-Valitse repossa **Settings → Pages → Build and deployment → Source: GitHub Actions**.
-Sen jälkeen työnkulku julkaisee sivun osoitteeseen `https://<käyttäjä>.github.io/suomi_numeroina/`.
-Työnkulun voi käynnistää myös käsin Actions-välilehdeltä (*Run workflow*).
+Sivua ei julkaista minnekään oletuksena. Jos haluat sen GitHub Pagesiin (osoite on julkinen):
 
-## Paikallinen käyttö
+1. **Settings → Pages → Build and deployment → Source: GitHub Actions**
+2. **Settings → Secrets and variables → Actions → Variables**: lisää muuttuja `PUBLISH_PAGES` arvolla `true`
 
-```bash
-python3 scripts/fetch_data.py
-```
-
-```bash
-python3 -m http.server 8000
-```
-
-Avaa sitten `http://localhost:8000`. Riippuvuuksia ei ole: skripti käyttää vain Pythonin
-standardikirjastoa ja sivu on yksi HTML-tiedosto.
+Riippuvuuksia ei ole: skripti käyttää vain Pythonin standardikirjastoa ja sivu on yksi HTML-tiedosto.
