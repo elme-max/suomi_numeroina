@@ -1,0 +1,60 @@
+name: Päivitä data ja julkaise
+
+on:
+  schedule:
+    # Joka päivä klo 06.20 UTC: Tilastokeskus julkaisee uudet tiedot klo 8.00 Suomen aikaa.
+    - cron: "20 6 * * *"
+  workflow_dispatch:
+  push:
+    paths-ignore:
+      - "data/**"
+      - "README.md"
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: update-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Hae tuoreet luvut Tilastokeskuksesta
+        run: python3 scripts/fetch_data.py
+
+      - name: Tallenna muuttunut data
+        run: |
+          if [ -n "$(git status --porcelain data)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add data
+            git commit -m "Päivitä data"
+            git push
+          fi
+
+      - name: Kokoa sivusto
+        run: |
+          mkdir _site
+          cp -r index.html data _site/
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    # Julkaistaan vain oletushaarasta; vaatii, että Pagesin lähteeksi on valittu GitHub Actions.
+    if: github.ref_name == github.event.repository.default_branch
+    needs: update
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
