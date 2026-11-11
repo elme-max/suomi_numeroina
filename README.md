@@ -27,12 +27,13 @@ python3 scripts/fetch_data.py --avaa
 Windowsissa komento on `py scripts\fetch_data.py --avaa`. Komennosta voi tehdä työpöydälle
 pikakuvakkeen, jolloin dashboard päivittyy ja aukeaa kaksoisnapsautuksella.
 
-Vaihtoehtoisesti voit avata `index.html`-tiedoston sellaisenaan ja päivittää luvut komennolla
-`git pull`: GitHub Actions tallentaa tuoreen datan repoon päivittäin.
 
-## Miten automaattipäivitys toimii
+## Päivitys GitHubissa
 
-1. GitHub Actions -työnkulku (`.github/workflows/update.yml`) ajetaan joka päivä.
+Automaattinen päivittäinen ajo GitHubissa on kytketty pois päältä. Työnkulun voi käynnistää käsin
+Actions-välilehdeltä (*Run workflow*), ja ajastuksen saa takaisin työnkulkutiedoston ohjeella.
+
+1. GitHub Actions -työnkulku (`.github/workflows/update.yml`) käynnistetään.
 2. `scripts/fetch_data.py` hakee tuoreet sarjat ja kirjoittaa ne tiedostoihin `data/data.json`
    ja `data/data.js`. Tiedostot commitoidaan vain, jos Tilastokeskuksen luvut ovat muuttuneet.
 
